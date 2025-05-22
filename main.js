@@ -161,8 +161,8 @@ const renderCartProduct = (product) => {
     <div class="cart-item">
       <img src="${product.image}" alt="${product.name}" />
       <div class="cart-item-info">
-        <h4>${product.name}</h4>
-        <p>$${product.price}</p>
+        <h4>${product.name} <span>x${product.quantity}</span></h4>
+        <p>$${product.price * product.quantity}</p>
       </div>
       <button class="remove-item" data-id="${product.id}">✕</button>
     </div>
@@ -184,10 +184,22 @@ const addToCart = (e) => {
   if (e.target.classList.contains("addcard_button")) {
     const productName = e.target.parentElement.previousElementSibling.children[1].textContent;
     const product = products.find((p) => p.name === productName);
+
+
     if (product) {
-      cart.push(product);
+      const existingProduct = cart.find((p) => p.id === product.id);
+      // Verificar si el producto ya está en el carrito
+      // Si el producto ya está en el carrito, incrementar la cantidad
+      if (existingProduct) {
+        existingProduct.quantity += 1; // Incrementar la cantidad si el producto ya está en el carrito
+      } else {
+        cart.push({ ...product, quantity: 1 }); // Agregar el producto al carrito
+      }
+      
+
       renderCart();
       calculateSubtotal();
+      updateCartCount(); 
     }
   }
 };
@@ -196,22 +208,27 @@ const deleteProduct = (e) => {
   if (e.target.classList.contains("remove-item")) {
     const productId = parseInt(e.target.dataset.id);
     const productIndex = cart.findIndex((p) => p.id === productId);
+
     if (productIndex !== -1) {
-      cart.splice(productIndex, 1); // Eliminar el producto del array del carrito
+      if (cart[productIndex].quantity > 1) {
+        cart[productIndex].quantity -= 1;
+      } else {
+        cart.splice(productIndex, 1);
+      }
+
       renderCart();
-      calculateSubtotal(); // Volver a renderizar el carrito
+      calculateSubtotal();
+      updateCartCount();
     }
   }
 };
 
+
 // Calcular y mostrar el subtotal
 const calculateSubtotal = () => {
-  const subtotal = cart.reduce((total, product) => total + product.price, 0);
-  if (subtotal === 0) {
-    subtotalElement.innerHTML = `<span>$0</span>`;
-  } else {
+  const subtotal = cart.reduce((total, product) => total + product.price * product.quantity, 0);
   subtotalElement.innerHTML = `<span>$${subtotal}</span>`;
-}};
+};
 
 // Renderizar todos los productos en la página principal
 const imgProducts = (product) => {
@@ -247,3 +264,8 @@ const init = () => {
 
 init();
 
+const updateCartCount = () => {
+  const count = cart.reduce((total, item) => total + item.quantity, 0);
+  const contador = document.querySelector("#cart-count");
+  if (contador) contador.textContent = count;
+};
